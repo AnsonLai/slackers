@@ -1,30 +1,31 @@
 import 'dart:convert';
 
 class User {
-  User();
-
   int id;
   String name;
 
-  static final columns = ["id", "name"];
+  User({
+    this.id,
+    this.name,
+  });
 
-  Map toMap () {
-    Map map = {
-      "name": name,
-    };
+  factory User.fromMap(Map<String, dynamic> json) => new User(
+    id: json["id"],
+    name: json["name"],
+  );
 
-    if (id != null) {
-      map["id"] = id;
-    }
+  Map<String, dynamic> toMap() => {
+    "id": id,
+    "name": name,
+  };
+}
 
-    return map;
-  }
+User userFromJson(String str) {
+  final jsonData = json.decode(str);
+  return User.fromMap(jsonData);
+}
 
-  static fromMap (Map map) {
-    User user = new User();
-    user.id = map["id"];
-    user.name = map["name"];
-
-    return user;
-  }
+String userToJson(User data) {
+  final dyn = data.toMap();
+  return json.encode(dyn);
 }

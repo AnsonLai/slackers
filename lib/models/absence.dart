@@ -1,35 +1,35 @@
 import 'dart:convert';
-import 'user.dart';
 
 class Absence {
-  Absence();
-
   int id;
   int date;
   int user_id;
-  // User user;
 
-  static final columns = ["id", "date", "user_id"];
+  Absence({
+    this.id,
+    this.date,
+    this.user_id,
+  });
 
-  Map toMap () {
-    Map map = {
-      "date": date,
-      "user_id": user_id,
-    };
+  factory Absence.fromMap(Map<String, dynamic> json) => new Absence(
+    id: json["id"],
+    date: json["date"],
+    user_id: json["user_id"],
+  );
 
-    if (id != null) {
-      map["id"] = id;
-    }
+  Map<String, dynamic> toMap() => {
+    "id": id,
+    "date": date,
+    "user_id": user_id,
+  };
+}
 
-    return map;
-  }
+Absence absenceFromJson(String str) {
+  final jsonData = json.decode(str);
+  return Absence.fromMap(jsonData);
+}
 
-  static fromMap (Map map) {
-    Absence absence = new Absence();
-    absence.id = map["id"];
-    absence.date = map["date"];
-    absence.user_id = map["user_id"];
-
-    return absence;
-  }
+String absenceToJson(Absence data) {
+  final dyn = data.toMap();
+  return json.encode(dyn);
 }
