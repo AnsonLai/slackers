@@ -28,6 +28,8 @@ dependencies:
   bloc: ^0.14.0
   flutter_bloc: ^0.14.0
 
+  flutter_calendar_carousel: ^1.3.17
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
