@@ -15,7 +15,9 @@ class DatabaseClient {
   Database _database;
 
   Future<Database> get database async {
-    if (_database != null) return _database;
+    if (_database != null) {
+      return _database;
+    }
     _database = await create();
     return _database;
   }
@@ -24,7 +26,9 @@ class DatabaseClient {
     Directory path = await getApplicationDocumentsDirectory();
     String dbPath = join(path.path, "slackersDB.db");
 
-    _database = await openDatabase(dbPath, version: 1, onCreate: this._create);
+    _database = await openDatabase(dbPath,
+        version: 1, onOpen: (db) {}, onCreate: this._create);
+    return _database;
   }
 
   Future _create(Database db, int version) async {

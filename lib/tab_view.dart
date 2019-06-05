@@ -1,50 +1,51 @@
 import 'package:flutter/material.dart';
 
+import 'package:Slackers/models/database.dart';
+import 'package:Slackers/models/user.dart';
+import 'package:Slackers/widgets/user_selection.dart';
+import 'package:Slackers/widgets/user_page.dart';
+
+// TODO: REMOVE THIS TEST WIDGET!!!
+Widget test = Text("Hello World!");
+
 class _TabView {
   const _TabView({this.title, this.widget});
   final String title;
   final Widget widget;
 }
 
-Widget test = Text("hello");
-
 List<_TabView> _allTabViews = <_TabView>[
-  _TabView(title: 'HOME', widget: test),
+  _TabView(title: 'HOME', widget: buildUserSelectionWidget()),
 ];
 
-class _Page {
-  const _Page({this.icon, this.text});
-  final IconData icon;
-  final String text;
+void changeTabView(allUsers) {
+  for (var i = 0; i < allUsers.length; i++) {
+    _allTabViews.add(_TabView(title: allUsers[i].name, widget: test));
+  }
 }
 
-const List<_Page> _allPages = <_Page>[
-  _Page(icon: Icons.playlist_add, text: 'TRIUMPH'),
-  _Page(icon: Icons.playlist_add, text: 'NOTE'),
-  _Page(icon: Icons.check_circle, text: 'SUCCESS'),
-  _Page(icon: Icons.question_answer, text: 'OVERSTATE'),
-  _Page(icon: Icons.sentiment_very_satisfied, text: 'SATISFACTION'),
-  _Page(icon: Icons.camera, text: 'APERTURE'),
-  _Page(icon: Icons.assignment_late, text: 'WE MUST'),
-  _Page(icon: Icons.assignment_turned_in, text: 'WE CAN'),
-  _Page(icon: Icons.group, text: 'ALL'),
-  _Page(icon: Icons.block, text: 'EXCEPT'),
-];
-
-class ScrollableTabsDemo extends StatefulWidget {
+class ScrollableTabs extends StatefulWidget {
   @override
-  ScrollableTabsDemoState createState() => ScrollableTabsDemoState();
+  ScrollableTabsState createState() => ScrollableTabsState();
 }
 
-class ScrollableTabsDemoState extends State<ScrollableTabsDemo>
-    with SingleTickerProviderStateMixin {
+class ScrollableTabsState extends State<ScrollableTabs>
+    with TickerProviderStateMixin {
   TabController _controller;
-  bool _customIndicator = false;
+  List<User> _allUsers;
 
   @override
   void initState() {
     super.initState();
-    _controller = TabController(vsync: this, length: _allPages.length);
+    DatabaseClient.db.getAllUsers().then((allUsers) {
+      setState(() {
+        _allUsers = allUsers;
+        changeTabView(_allUsers);
+        _controller.dispose();
+        _controller = TabController(vsync: this, length: _allTabViews.length);
+      });
+    });
+    _controller = TabController(vsync: this, length: _allTabViews.length);
   }
 
   @override
@@ -54,7 +55,6 @@ class ScrollableTabsDemoState extends State<ScrollableTabsDemo>
   }
 
   Decoration getIndicator() {
-    if (!_customIndicator) return const UnderlineTabIndicator();
     return ShapeDecoration(
       shape: const StadiumBorder(
             side: BorderSide(
@@ -69,48 +69,72 @@ class ScrollableTabsDemoState extends State<ScrollableTabsDemo>
             ),
           ),
     );
-    return null;
   }
 
   @override
   Widget build(BuildContext context) {
-    final Color iconColor = Theme.of(context).accentColor;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Slackers'),
-        bottom: TabBar(
-          controller: _controller,
-          isScrollable: true,
-          indicator: getIndicator(),
-          tabs: _allPages.map<Tab>((_Page page) {
-            return Tab(text: page.text);
-            return null;
-          }).toList(),
+    if (_allUsers == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Slackers'),
+          bottom: TabBar(
+            controller: _controller,
+            isScrollable: true,
+            indicator: getIndicator(),
+            tabs: _allTabViews.map<Tab>((_TabView tabview) {
+              return Tab(text: tabview.title);
+            }).toList(),
+          ),
         ),
-      ),
-      body: TabBarView(
-        controller: _controller,
-        children: _allPages.map<Widget>((_Page page) {
-          return SafeArea(
-            top: false,
-            bottom: false,
-            child: Container(
-              key: ObjectKey(page.icon),
-              padding: const EdgeInsets.all(12.0),
-              child: Card(
-                child: Center(
-                  child: Icon(
-                    page.icon,
-                    color: iconColor,
-                    size: 128.0,
-                    semanticLabel: 'Placeholder for ${page.text} tab',
+        body: TabBarView(
+          controller: _controller,
+          children: _allTabViews.map<Widget>((_TabView tabview) {
+            return SafeArea(
+              top: false,
+              bottom: false,
+              child: Container(
+                padding: const EdgeInsets.all(12.0),
+                child: Card(
+                  child: Center(
+                    child: tabview.widget,
                   ),
                 ),
               ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
+            );
+          }).toList(),
+        ),
+      );
+    } else {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Slackers DONE LOADING'),
+          bottom: TabBar(
+            controller: _controller,
+            isScrollable: true,
+            indicator: getIndicator(),
+            tabs: _allTabViews.map<Tab>((_TabView tabview) {
+              return Tab(text: tabview.title);
+            }).toList(),
+          ),
+        ),
+        body: TabBarView(
+          controller: _controller,
+          children: _allTabViews.map<Widget>((_TabView tabview) {
+            return SafeArea(
+              top: false,
+              bottom: false,
+              child: Container(
+                padding: const EdgeInsets.all(12.0),
+                child: Card(
+                  child: Center(
+                    child: tabview.widget,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      );
+    }
   }
 }
