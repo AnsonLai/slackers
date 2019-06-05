@@ -1,9 +1,14 @@
+import 'package:flutter/material.dart';
+
 import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
+
+import 'package:flutter_calendar_carousel/classes/event.dart';
+import 'package:flutter_calendar_carousel/classes/event_list.dart';
 
 import 'user.dart';
 import 'absence.dart';
@@ -97,9 +102,53 @@ class DatabaseClient {
     return list;
   }
 
+  // Formatted for Carousel Calendar
+  Future<EventList<Event>> getAbsencesMapFromUser(User user) async {
+    EventList<Event> _markedDateMap = new EventList();
+    Widget _eventIcon = new Container(
+      decoration: new BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.all(Radius.circular(1000)),
+          border: Border.all(color: Colors.blue, width: 2.0)),
+      child: new Icon(
+        Icons.person,
+        color: Colors.amber,
+      ),
+    );
+
+    final db = await database;
+    int user_id = user.id;
+    var res =
+        await db.query("Absence", where: "user_id = ?", whereArgs: [user_id]);
+    List<Absence> list =
+        res.isNotEmpty ? res.map((c) => Absence.fromMap(c)).toList() : [];
+
+    for (var i = 0; i < list.length; i++) {
+      DateTime _dateTimeFull = DateTime.fromMillisecondsSinceEpoch(list[i].date);
+      DateTime _dateTime = DateTime(_dateTimeFull.year, _dateTimeFull.month, _dateTimeFull.day);
+      _markedDateMap.add(_dateTime,
+          Event(date: _dateTime, title: user.name, icon: _eventIcon));
+    }
+
+
+
+    return _markedDateMap;
+  }
+
   // DELETE
   deleteUser(User user) async {
     final db = await database;
+    db.delete("Absence", where: "user_id = ?", whereArgs: [user.id]);
     db.delete("User", where: "id = ?", whereArgs: [user.id]);
   }
+
+  deleteAbsence () async {
+    final db = await database;
+    db.rawDelete('DELETE FROM Absence WHERE date BETWEEN 0 and 999999999999999');
+  }
+
+
+
+
+
 }

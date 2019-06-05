@@ -5,8 +5,7 @@ import 'package:Slackers/models/user.dart';
 import 'package:Slackers/widgets/user_selection.dart';
 import 'package:Slackers/widgets/user_page.dart';
 
-// TODO: REMOVE THIS TEST WIDGET!!!
-Widget test = Text("Hello World!");
+
 
 class _TabView {
   const _TabView({this.title, this.widget});
@@ -14,15 +13,7 @@ class _TabView {
   final Widget widget;
 }
 
-List<_TabView> _allTabViews = <_TabView>[
-  _TabView(title: 'HOME', widget: buildUserSelectionWidget()),
-];
-
-void changeTabView(allUsers) {
-  for (var i = 0; i < allUsers.length; i++) {
-    _allTabViews.add(_TabView(title: allUsers[i].name, widget: test));
-  }
-}
+List<_TabView> _allTabViews = <_TabView>[];
 
 class ScrollableTabs extends StatefulWidget {
   @override
@@ -34,9 +25,16 @@ class ScrollableTabsState extends State<ScrollableTabs>
   TabController _controller;
   List<User> _allUsers;
 
-  @override
-  void initState() {
-    super.initState();
+  void changeTabView(allUsers) {
+    _allTabViews = <_TabView>[];
+    _allTabViews.add(_TabView(
+        title: 'HOME', widget: buildUserSelectionWidget(this.dbChanged)));
+    for (var i = 0; i < allUsers.length; i++) {
+      _allTabViews.add(_TabView(title: allUsers[i].name, widget: buildUserPageWidget(allUsers[i], this.dbChanged)));
+    }
+  }
+
+  void dbChanged() {
     DatabaseClient.db.getAllUsers().then((allUsers) {
       setState(() {
         _allUsers = allUsers;
@@ -45,6 +43,14 @@ class ScrollableTabsState extends State<ScrollableTabs>
         _controller = TabController(vsync: this, length: _allTabViews.length);
       });
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _allTabViews.add(_TabView(
+        title: 'HOME', widget: buildUserSelectionWidget(this.dbChanged)));
+    dbChanged();
     _controller = TabController(vsync: this, length: _allTabViews.length);
   }
 
