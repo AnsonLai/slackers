@@ -13,12 +13,28 @@ Widget buildUserSelectionWidget(Function dbChanged) {
       if (snapshot.hasData) {
         if (snapshot.data != null) {
           List<User> _allUsers = snapshot.data;
-          return Scaffold(
-            body: Center(
-              child: buildUserList(_allUsers),
-            ),
-            floatingActionButton: buildFloatingButton(context, dbChanged),
-          );
+          if (_allUsers.length > 0) {
+            return Scaffold(
+              body: Center(
+                child: buildUserList(_allUsers, dbChanged),
+              ),
+              floatingActionButton: buildFloatingButton(context, dbChanged),
+            );
+          } else {
+            return Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      'Please add a new user to begin.',
+                    ),
+                  ],
+                ),
+              ),
+              floatingActionButton: buildFloatingButton(context, dbChanged),
+            );
+          }
         }
       }
       return Scaffold(
@@ -27,7 +43,7 @@ Widget buildUserSelectionWidget(Function dbChanged) {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Text(
-                'Please add a user.',
+                'Loading...',
               ),
             ],
           ),
@@ -39,24 +55,37 @@ Widget buildUserSelectionWidget(Function dbChanged) {
   );
 }
 
-Widget buildUserList(List<User> allUsers) {
-  return ListView.builder(
-    itemCount: allUsers.length,
-    itemBuilder: (BuildContext context, int index) {
-      return RaisedButton(
-          onPressed: () {
-            // int date = DateTime.now().millisecondsSinceEpoch;
-            int date = DateTime.utc(2019, 5, 28).millisecondsSinceEpoch;
-            int user_id = allUsers[index].id;
-            Absence absence = Absence(date: date, user_id: user_id);
-            DatabaseClient.db.upsertAbsence(absence);
-            print(absence.date);
-            final snackBar = SnackBar(content: Text('Noted!'));
-            Scaffold.of(context).showSnackBar(snackBar);
-          },
-          child: Text(allUsers[index].name));
-    },
-  );
+Widget buildUserList(List<User> allUsers, Function dbChanged) {
+  return FutureBuilder(
+      future: DatabaseClient.db.checkToday(allUsers, DateTime.now()),
+      builder: (BuildContext context, AsyncSnapshot snapshot) {
+        Map<int, bool> _todayUsers = snapshot.data;
+        return ListView.builder(
+            itemCount: allUsers.length,
+            itemBuilder: (BuildContext context, int index) {
+              if (_todayUsers != null && _todayUsers.containsKey(allUsers[index].id)) {
+                if (!_todayUsers[allUsers[index].id]) {
+                  return RaisedButton(
+                      onPressed: () {
+                        int date = DateTime.now().millisecondsSinceEpoch;
+                        int user_id = allUsers[index].id;
+                        Absence absence = Absence(date: date, user_id: user_id);
+                        DatabaseClient.db.upsertAbsence(absence);
+                        final snackBar = SnackBar(content: Text('Noted!'));
+                        Scaffold.of(context).showSnackBar(snackBar);
+                        dbChanged();
+                      },
+                      color: Colors.green[300],
+                      child: Text(allUsers[index].name));
+                } else {
+                  return RaisedButton(
+                      onPressed: null,
+                      child: Text(allUsers[index].name));
+                }
+                return null;
+              }
+            });
+      });
 }
 
 Widget buildFloatingButton(BuildContext context, Function dbChanged) {

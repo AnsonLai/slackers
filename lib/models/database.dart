@@ -102,17 +102,37 @@ class DatabaseClient {
     return list;
   }
 
-  // Formatted for Carousel Calendar
+  // DELETE
+  deleteUser(User user) async {
+    final db = await database;
+    db.delete("Absence", where: "user_id = ?", whereArgs: [user.id]);
+    db.delete("User", where: "id = ?", whereArgs: [user.id]);
+  }
+
+  deleteAbsence(User user, DateTime dateTime) async {
+    final db = await database;
+
+    int user_id = user.id;
+    int _startMS = DateTime(dateTime.year, dateTime.month, dateTime.day)
+        .millisecondsSinceEpoch;
+    int _endMS = _startMS + 86399999;
+    db.rawDelete(
+        'DELETE FROM Absence WHERE user_id = ? AND date BETWEEN ? and ?',
+        [user_id.toString(), _startMS.toString(), _endMS.toString()]);
+  }
+
+  // CAROUSEL CALENDAR SPECIFIC FUNCTIONS
+  // Create markedDatesMap from query
   Future<EventList<Event>> getAbsencesMapFromUser(User user) async {
     EventList<Event> _markedDateMap = new EventList();
     Widget _eventIcon = new Container(
       decoration: new BoxDecoration(
-          color: Colors.black,
+          color: Colors.red,
           borderRadius: BorderRadius.all(Radius.circular(1000)),
-          border: Border.all(color: Colors.blue, width: 2.0)),
+          border: Border.all(color: Colors.red, width: 2.0)),
       child: new Icon(
-        Icons.person,
-        color: Colors.amber,
+        Icons.cancel,
+        color: Colors.white,
       ),
     );
 
@@ -124,31 +144,68 @@ class DatabaseClient {
         res.isNotEmpty ? res.map((c) => Absence.fromMap(c)).toList() : [];
 
     for (var i = 0; i < list.length; i++) {
-      DateTime _dateTimeFull = DateTime.fromMillisecondsSinceEpoch(list[i].date);
-      DateTime _dateTime = DateTime(_dateTimeFull.year, _dateTimeFull.month, _dateTimeFull.day);
+      DateTime _dateTimeFull =
+          DateTime.fromMillisecondsSinceEpoch(list[i].date);
+      DateTime _dateTime =
+          DateTime(_dateTimeFull.year, _dateTimeFull.month, _dateTimeFull.day);
       _markedDateMap.add(_dateTime,
           Event(date: _dateTime, title: user.name, icon: _eventIcon));
     }
 
-
-
     return _markedDateMap;
   }
 
-  // DELETE
-  deleteUser(User user) async {
+  // Handle calendar click (create or destroy absence)
+  handleCalendarClick(User user, DateTime dateTime) async {
     final db = await database;
-    db.delete("Absence", where: "user_id = ?", whereArgs: [user.id]);
-    db.delete("User", where: "id = ?", whereArgs: [user.id]);
+
+    int user_id = user.id;
+    int _startMS = DateTime(dateTime.year, dateTime.month, dateTime.day)
+        .millisecondsSinceEpoch;
+    int _endMS = _startMS + 86399999;
+
+    var res = await db.rawQuery(
+        'SELECT * FROM Absence WHERE user_id = ? AND date BETWEEN ? and ?',
+        [user_id.toString(), _startMS.toString(), _endMS.toString()]);
+
+    List<Absence> list =
+        res.isNotEmpty ? res.map((c) => Absence.fromMap(c)).toList() : [];
+
+    if (list.length > 0) {
+      deleteAbsence(user, dateTime);
+    } else {
+      Absence absence = Absence(user_id: user_id, date: _startMS);
+      upsertAbsence(absence);
+    }
   }
 
-  deleteAbsence () async {
+  dummy() async {
     final db = await database;
-    db.rawDelete('DELETE FROM Absence WHERE date BETWEEN 0 and 999999999999999');
+    return {1: true, 2: false};
   }
 
+  checkToday(List<User> allUsers, DateTime dateTime) async {
+    final db = await database;
 
+    Map<int, bool> output = {};
+    
+    
+    int _startMS = DateTime(dateTime.year, dateTime.month, dateTime.day)
+        .millisecondsSinceEpoch;
+    int _endMS = _startMS + 86399999;
 
+    for (var i = 0; i < allUsers.length; i++) {
+      int user_id = allUsers[i].id;
+      var res = await db.rawQuery(
+          'SELECT * FROM Absence WHERE user_id = ? AND date BETWEEN ? and ?',
+          [user_id.toString(), _startMS.toString(), _endMS.toString()]);
+      if (res.length > 0) {
+        output[user_id] = true;
+      } else {
+        output[user_id] = false;
+      }
+    }
 
-
+    return output;
+  }
 }

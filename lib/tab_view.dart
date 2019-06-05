@@ -5,8 +5,6 @@ import 'package:Slackers/models/user.dart';
 import 'package:Slackers/widgets/user_selection.dart';
 import 'package:Slackers/widgets/user_page.dart';
 
-
-
 class _TabView {
   const _TabView({this.title, this.widget});
   final String title;
@@ -30,7 +28,9 @@ class ScrollableTabsState extends State<ScrollableTabs>
     _allTabViews.add(_TabView(
         title: 'HOME', widget: buildUserSelectionWidget(this.dbChanged)));
     for (var i = 0; i < allUsers.length; i++) {
-      _allTabViews.add(_TabView(title: allUsers[i].name, widget: buildUserPageWidget(allUsers[i], this.dbChanged)));
+      _allTabViews.add(_TabView(
+          title: allUsers[i].name,
+          widget: buildUserPageWidget(allUsers[i], this.dbChanged)));
     }
   }
 
@@ -39,8 +39,21 @@ class ScrollableTabsState extends State<ScrollableTabs>
       setState(() {
         _allUsers = allUsers;
         changeTabView(_allUsers);
+
+        int _prevTabLength = _controller.length;
+        int _newTabLength = _allTabViews.length;
+        int _currentIndex = _controller.index;
+
         _controller.dispose();
-        _controller = TabController(vsync: this, length: _allTabViews.length);
+        _controller = TabController(vsync: this, length: _newTabLength);
+
+        if (_newTabLength > _prevTabLength) {
+          _controller.animateTo(0);
+        } else if (_newTabLength < _prevTabLength) {
+          _controller.animateTo(_allTabViews.length - 1);
+        } else if (_newTabLength == _prevTabLength) {
+          _controller.animateTo(_currentIndex);
+        }
       });
     });
   }
@@ -62,19 +75,12 @@ class ScrollableTabsState extends State<ScrollableTabs>
 
   Decoration getIndicator() {
     return ShapeDecoration(
-      shape: const StadiumBorder(
-            side: BorderSide(
-              color: Colors.white24,
-              width: 2.0,
-            ),
-          ) +
-          const StadiumBorder(
-            side: BorderSide(
-              color: Colors.transparent,
-              width: 4.0,
-            ),
-          ),
-    );
+        shape: Border(
+      bottom: BorderSide(
+        color: Colors.white,
+        width: 4.0,
+      ),
+    ));
   }
 
   @override
@@ -113,7 +119,7 @@ class ScrollableTabsState extends State<ScrollableTabs>
     } else {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Slackers DONE LOADING'),
+          title: const Text('Slackers'),
           bottom: TabBar(
             controller: _controller,
             isScrollable: true,

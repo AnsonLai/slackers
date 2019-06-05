@@ -29,9 +29,10 @@ Widget buildUserPageWidget(User user, Function dbChanged) {
                   return event.icon;
                 },
                 onDayPressed: (DateTime date, List<Event> events) {
-                  // TODO: Add/remove absences based on click
+                  DatabaseClient.db.handleCalendarClick(user, date);
+                  dbChanged();
                 },
-                thisMonthDayBorderColor: Colors.grey,
+                thisMonthDayBorderColor: Colors.grey[350],
                 todayButtonColor: Colors.black.withOpacity(0.5),
                 daysHaveCircularBorder: null,
               ),
@@ -40,6 +41,8 @@ Widget buildUserPageWidget(User user, Function dbChanged) {
                     DatabaseClient.db.deleteUser(user);
                     dbChanged();
                   },
+                  textColor: Colors.white,
+                  color: Colors.red,
                   child: Text("DELETE USER")),
             ],
           ),
